@@ -17,7 +17,7 @@
 // 
 //////////////////////////////////////////////////////////////////////////////////
 `define ORI        "matrix_ori.txt"
-`define ANS        "matrix_ans.txt"
+//`define ANS        "matrix_ans.txt"
 
 module tb;
   parameter DATA_WIDTH = 20;
