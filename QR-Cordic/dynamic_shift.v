@@ -37,36 +37,6 @@ wire signed[DATA_WIDTH-1:0] value_shift1 = iter_num[0] ? value_shift2 >>> 1 : va
 always @(*)begin
     value_itered <= value_shift1;
 end
-/*
-always @(*) begin
-    if(iter_num[3] == 1)
-        temp <= temp >>> 8;
-    else if(iter_num[2] == 1)
-        temp <= temp >>> 4;
-    else if(iter_num[1] == 1)
-        temp <= temp >>> 2;
-    else if(iter_num[0] == 1) begin
-        temp <= temp >>> 1;
-        valid <= 1;
-    end
-    else
-        temp <= temp;
-end
-*/
 
-/*
-always @(*) begin
-    if(iter_num[3] == 1) 
-        value_itered <= value >>> 8;
-    else if(iter_num[2] == 1)
-        value_itered <= value >>> 4;
-    else if(iter_num[1] == 1)
-        value_itered <= value >>> 2;
-    else if(iter_num[0] == 1)
-        value_itered <= value >>> 1;
-    else
-        value_itered <= value;
-end
-*/
 
 endmodule
