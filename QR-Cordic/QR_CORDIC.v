@@ -26,14 +26,11 @@ module QR_CORDIC#(
   ) (
     input signed[DATA_WIDTH*D_WIDTH -1:0] a_ij,
     input valid_i,
-    //input [3:0] iter_num,
     input clk,
     input rst_n,
     
     output reg valid_o,
-    output reg signed[DATA_WIDTH*D_WIDTH -1:0] out_r,
-    output reg signed[DATA_WIDTH-1:0] out_q
-
+    output reg signed[DATA_WIDTH*D_WIDTH -1:0] out_r
     );
     
 localparam ROW_INDEX = 8; //8 row
@@ -73,9 +70,19 @@ assign store_buff2 = a_ij[DATA_WIDTH*(D_WIDTH-1) -1 :DATA_WIDTH*(D_WIDTH -2)];
 assign store_buff3 = a_ij[DATA_WIDTH*(D_WIDTH-2) -1 :DATA_WIDTH*(D_WIDTH -3)];
 assign store_buff4 = a_ij[DATA_WIDTH*(D_WIDTH-3) -1 :DATA_WIDTH*(D_WIDTH -4)];
 
-wire [4:0] counter_mult4 =(valid_i | cur_state == OUT)? (counter<<2) : 0; //log_2^(row * col ) = 5 bits
+//wire [4:0] counter_mult4 =(valid_i | cur_state == OUT)? (counter<<2) : 0; //log_2^(row * col ) = 5 bits
+reg [4:0] counter_mult4;
 always@(posedge clk or negedge rst_n) begin
-    if(valid_i) begin
+    if(!rst_n)
+        counter_mult4 <= 0;
+    else if(valid_i | cur_state == OUT)
+        counter_mult4 <= counter<<2;
+    else
+        counter_mult4 <= 0;
+end
+
+always@(posedge clk) begin
+    if(valid_i| cur_state == STORE_and_CAL) begin
         store_data[counter_mult4] <= store_buff1;
         store_data[counter_mult4 +1] <= store_buff2;
         store_data[counter_mult4 +2] <= store_buff3;
@@ -135,7 +142,7 @@ always @(posedge clk or negedge rst_n) begin
         GG4_address <= GG4_address;
 end
 wire GG1_valido_rij, GG2_valido_rij, GG3_valido_rij, GG4_valido_rij;
-always@(posedge clk or negedge rst_n) begin
+always@(posedge clk ) begin
     if(GG1_valido_rij) begin
         store_data[GG1_address] <= GG1_out;
         store_data[GG1_address + 4] <= GG1_x;
@@ -160,15 +167,15 @@ always @(posedge clk or negedge rst_n) begin
    if(!rst_n) begin
        counter <= 0;
    end 
-   //else if(GG_GR_CAL)begin
-   //    counter <= counter + 'd1;
-   //end
+   else if(valid_i)begin
+       counter <= counter + 'd1;
+   end
    else 
        counter <= counter + 'd1;
 end 
 
-wire data_finish =(!rst_n)? 0 : (GG4_address==31 & counter ==0)? 1 : data_finish;
-wire data_output_finish =(!rst_n)? 0 : (data_finish & counter==8)? 1 : data_output_finish;
+wire data_finish =(!rst_n)? 0 : (GG4_address==31 & counter ==1)? 1 : data_finish;
+wire data_output_finish =(!rst_n)? 0 : (data_finish & counter==9)? 1 : data_output_finish;
 always @(posedge clk or negedge rst_n) begin 
     if(!rst_n) begin
         out_r <= 0;
@@ -536,7 +543,5 @@ GG #(
      );
 
  
-     
-
 
 endmodule
