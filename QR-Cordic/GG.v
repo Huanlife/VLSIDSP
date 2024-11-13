@@ -37,7 +37,8 @@ module GG #(
     output reg [D_WIDTH-1:0] d_i_d_o
   );
 
-parameter signed K = 20'b0000000000_1001101101;
+parameter signed K = 11'b0_1001101101;
+parameter K_WIDTH = 11;
 
 reg [3:0] shift_num0, shift_num1, shift_num2, shift_num3;
 
@@ -52,7 +53,6 @@ always @(posedge clk) begin
         data1_arrive <= data1_arrive;
 end
 
-//wire data1_arrive=(valid_i)? 1:data1_arrive;
 reg signed[DATA_WIDTH-1:0] oy, ox;
 always @(posedge clk ) begin  
     if(valid_i & data1_arrive) begin
@@ -96,9 +96,6 @@ dynamic_shift #(D_WIDTH,DATA_WIDTH) x_shifter3 (x2_unoverflow, shift_num2, x2_sh
 dynamic_shift #(D_WIDTH,DATA_WIDTH) y_shifter4 (y3_unoverflow, shift_num3, y3_shifted);
 dynamic_shift #(D_WIDTH,DATA_WIDTH) x_shifter4 (x3_unoverflow, shift_num3, x3_shifted);
 //========== Determine overflow ========== //  extended bit + sign bit = 01 positive overflow, =10 negitive overflow
-//wire signed[DATA_WIDTH-1:0] x1_unoverflow =(x1[DATA_WIDTH] ^ x1[DATA_WIDTH-1]) ? (x1[DATA_WIDTH] ? 20'b10000000000000000000 : 20'b01111111111111111111) : x1;
-//wire signed[DATA_WIDTH-1:0] y1_unoverflow =(y1[DATA_WIDTH] ^ y1[DATA_WIDTH-1]) ? (y1[DATA_WIDTH] ? 20'b10000000000000000000 : 20'b01111111111111111111) : y1;
-
 reg signed[DATA_WIDTH-1:0] x1_unoverflow, x2_unoverflow, x3_unoverflow, x4_unoverflow;
 reg signed[DATA_WIDTH-1:0] y1_unoverflow, y2_unoverflow, y3_unoverflow, y4_unoverflow;
 always @(*) begin
@@ -113,8 +110,6 @@ always @(*) begin
     y4_unoverflow <=(y4[DATA_WIDTH] ^ y4[DATA_WIDTH-1]) ? (y4[DATA_WIDTH] ? 20'b10000000000000000000 : 20'b01111111111111111111) : y4;
     end
 end
-
-
 
 always @(posedge clk) begin
     if(!rst_n)
@@ -164,10 +159,12 @@ always @(posedge clk or negedge rst_n) begin
         valid_time = {valid_time,valid_i};
 end 
 
+wire signed [DATA_WIDTH+K_WIDTH-1:0] rij_ff_o_buff =(shift_num0 == 8)? y4_unoverflow *K : 0;
+wire signed [DATA_WIDTH+K_WIDTH-1:0] final_nx_buff =(shift_num0 == 8)? x4_unoverflow *K : 0;
 always @(posedge clk) begin
     if(shift_num0 == 8) begin
-        rij_ff_o <= y4_unoverflow *K;
-        final_nx <= x4_unoverflow *K;
+        rij_ff_o <= {rij_ff_o_buff[DATA_WIDTH+K_WIDTH-1],rij_ff_o_buff[DATA_WIDTH+K_WIDTH-3:DATA_WIDTH+K_WIDTH-22]};
+        final_nx <= {final_nx_buff[DATA_WIDTH+K_WIDTH-1],final_nx_buff[DATA_WIDTH+K_WIDTH-3:DATA_WIDTH+K_WIDTH-22]};
     end
 end
 
@@ -177,20 +174,5 @@ always @(posedge clk) begin
     else
         valid_o_rij <= 0;
 end
-
-/*
-wire clk_out;
-wire locked;
-
-//========== PLL IP call ========== //
-clk_wiz_0 clk_wiz_0_inst
-   (
-    .clk_in1(clk),            // IN 100Mhz
-    // Clock out ports
-    .clk_out1(clk_out),    // OUT 400Mhz	 
-    // Status and control signals	 
-    .reset(~rst_n),        // pll reset, high-active
-    .locked(locked));     // OUT
-*/
 
 endmodule
