@@ -31,7 +31,6 @@ module tb;
   wire signed[DATA_WIDTH*D_WIDTH -1:0] out_r;
   wire valid_o;
   
-  integer fp_r, fp_w;
   integer i;
   reg  [DATA_WIDTH -1:0] ori [0:row*D_WIDTH-1];
 
