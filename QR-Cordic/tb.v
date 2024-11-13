@@ -16,23 +16,24 @@
 // Additional Comments:
 // 
 //////////////////////////////////////////////////////////////////////////////////
-
+`define ORI        "matrix_ori.txt"
+`define ANS        "matrix_ans.txt"
 
 module tb;
-
   parameter DATA_WIDTH = 20;
   parameter D_WIDTH = 4;
+  parameter row = 8;
 
   reg rst_n,clk;
-
   reg signed[DATA_WIDTH*D_WIDTH -1:0] a_ij; //input
   reg valid_i,propogate_i;
-  //reg valid_gr;
-
-  //wire [DATA_WIDTH-1:0] rij_ff_o,rij_ff_gr_o;
+  
   wire signed[DATA_WIDTH*D_WIDTH -1:0] out_r;
   wire valid_o;
   
+  integer fp_r, fp_w;
+  integer i;
+  reg  [DATA_WIDTH -1:0] ori [0:row*D_WIDTH-1];
 
   initial
     clk = 0;
@@ -40,14 +41,20 @@ module tb;
 
 
   initial
-  begin
-    // 00000010010000000000  // GG x = 9.000000
-    // 00000010010000000000  //    y = 9.000000
-    // 00000011001011011001  //    r = 12.711914
-    // (20,10) fix-point.
-    rst_n = 1;
-    a_ij  = 0;
-    //aij_gr = 0;
+  begin  
+    $readmemb (`ORI, ori);
+    $display("-----------------------------------------------------\n");
+    $display("START!!! Simulation Start .....\n");
+    $display("Your input matrix is : \n");
+    for(i=0;i<8;i=i+1) begin
+      $display("%20f %20f %20f %20f",$signed(ori[4*i]),$signed(ori[4*i+1]),$signed(ori[4*i+2]),$signed(ori[4*i+3]));
+    end
+    $display("-----------------------------------------------------\n");
+    
+    
+    //rst_n = 1;
+
+    
     #(`CYCLE_TIME*1.0) rst_n = 0;
     #(`CYCLE_TIME*1.0)
      // Starts calculation of GG
@@ -55,50 +62,28 @@ module tb;
     //propogate_i = 0;
     
     #5;
-    valid_i = 1; // start input data
-    a_ij = 80'b10000010010000000000_00000010000000000010_00000000000010000100_00001000110000000000; // vector mode first input: a_81
-    
-    #(`CYCLE_TIME*1.0);
-    valid_i  = 1;
-    a_ij = 80'b00000010010001000010_10000010010000001000_10000010010000000000_10000010010000001000; // vector mode second input: a_72
-    
-    #(`CYCLE_TIME*1.0);
-    valid_i  = 1;
-    a_ij = 80'b00000010010001000010_10000010010000000000_10000010010000000000_10000010010000000001;
-    // give first d0-d3 (rotation 1)
-    //valid_gr = 1; //rotation mode (second)
-    //aij_gr = 20'b00000010010001000010; // rotation mode second input a_72
-    
-    #(`CYCLE_TIME*1.0);
-    valid_i  = 1;
-    a_ij = 80'b00100010011001000010_10000010010000000000_10000010010000010000_10000010010000000001;
+    for(i=0;i<9;i=i+1) begin
+      @(posedge clk)
+        valid_i = 1; // start input data
+        a_ij = {ori[4*i],ori[4*i+1],ori[4*i+2],ori[4*i+3]} ;
+    end
+    valid_i = 0;
     
     
-    #(`CYCLE_TIME*1.0);
-    valid_i  = 1;
-    a_ij = 80'b00100010011001000011_10000010010000000000_10000010010000010000_10000010010000000001;
+    wait(valid_o);
+    for(i=8;i>0;i=i-1) begin
+      @(posedge clk) begin
+          $display("Your matrix[%1d][0] is %8d",i,$signed(out_r[79:60]));
+          $display("Your matrix[%1d][1] is %8d",i,$signed(out_r[59:40]));
+          $display("Your matrix[%1d][2] is %8d",i,$signed(out_r[39:20]));
+          $display("Your matrix[%1d][3] is %8d",i,$signed(out_r[19:0]));
+          $display("------------------------------------------------------");
+      end
+    end
     
-    #(`CYCLE_TIME*1.0);
-    valid_i  = 1;
-    a_ij = 80'b00100010011001010010_10000010010000000000_10000010010000010000_10000010010000000001;
-    
-    
-    #(`CYCLE_TIME*1.0);
-    valid_i  = 1;
-    a_ij = 80'b00101010011001010010_10000010010000001000_10000010010000000000_10000010010000000011;
-    
-    #(`CYCLE_TIME*1.0);
-    valid_i  = 1;
-    a_ij = 80'b00100010011001010011_10000010010000001001_10000000010000010000_01000010010000000001;
-    //valid_gr = 0; //(rotation 3)
     
     #(`CYCLE_TIME*1.0);
     valid_i = 0;
-    //valid_gr = 0;
-    
-    //========== ¥¼­×§ï========== //
-    #(`CYCLE_TIME*1.0);
-    //iter_num = 12;
     
     #(`CYCLE_TIME*10.0) $finish;
     end
@@ -108,11 +93,9 @@ module tb;
        .DATA_WIDTH(DATA_WIDTH)
      ) QR(
        .a_ij(a_ij),
-       .valid_i(valid_i),
-       
+       .valid_i(valid_i),      
        .clk(clk),
-       .rst_n(rst_n),
-       
+       .rst_n(rst_n),    
        .valid_o(valid_o),
        .out_r(out_r)
      );
