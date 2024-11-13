@@ -35,7 +35,8 @@ module GR #(
     output reg [D_WIDTH-1:0] d_i_d_o
     );
 
-parameter signed K = 20'b0000000000_1001101101;
+parameter signed K = 11'b0_1001101101;
+parameter K_WIDTH = 11;
 
 reg [3:0] shift_num0, shift_num1, shift_num2, shift_num3;
 //========== initial X & Y ========== //
@@ -126,12 +127,12 @@ always @(posedge clk) begin
     end
 end
 
-
+wire signed [DATA_WIDTH+K_WIDTH-1:0] rij_ff_o_buff =(shift_num0 == 8)? y4_unoverflow *K : 0;
 always @(posedge clk or negedge rst_n) begin
     if(!rst_n)
         rij_ff_o <= 0;
     else if(shift_num0 == 8) //9
-        rij_ff_o <= y4_unoverflow *K;
+        rij_ff_o <= {rij_ff_o_buff[DATA_WIDTH+K_WIDTH-1],rij_ff_o_buff[DATA_WIDTH+K_WIDTH-3:DATA_WIDTH+K_WIDTH-22]};
 end
 
 integer i;
